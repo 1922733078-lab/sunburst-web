@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Sunburst — 把一句话变成一张图。文生图与参考图生成，PNG 输出。">
+<title>Sunburst · 把一句话变成一张图</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%230071e3'/%3E%3Cstop offset='1' stop-color='%235e5ce6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='white' stroke-width='3'/%3E%3Cg stroke='white' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M32 10v7M32 47v7M10 32h7M47 32h7M16.5 16.5l5 5M42.5 42.5l5 5M47.5 16.5l-5 5M21.5 42.5l-5 5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <span class="orb orb-a"></span>
+  <span class="orb orb-b"></span>
+  <span class="orb orb-c"></span>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="#create" data-view="create" aria-label="Sunburst 首页">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.7v2.1M12 19.2v2.1M2.7 12h2.1M19.2 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></g></svg>
+      </span>
+      <span class="brand-name">Sunburst</span>
+    </a>
+    <nav class="tabs" role="tablist" aria-label="主导航">
+      <button class="tab is-active" type="button" role="tab" data-view="create" aria-selected="true">创作</button>
+      <button class="tab" type="button" role="tab" data-view="tasks" aria-selected="false">任务<span class="tab-badge" id="task-badge" hidden>0</span></button>
+      <button class="tab" type="button" role="tab" data-view="gallery" aria-selected="false">画廊</button>
+    </nav>
+    <div class="top-actions">
+      <span class="user-pill" id="user-pill" title="当前访问身份">
+        <span class="user-avatar" id="user-avatar">S</span>
+        <span class="user-label" id="user-label">连接中</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="view-create" class="view is-active">
+    <div class="hero">
+      <p class="eyebrow"><span class="eyebrow-line"></span>GPT-IMAGE · SUNBURST</p>
+      <h1>把一句话，<br class="mobile-break">变成一张图。</h1>
+      <p class="hero-sub">描述你脑海里的画面，或上传参考图再说明。任务会在后台排队生成，完成后自动出现在画廊。</p>
+    </div>
+
+    <div class="workspace">
+      <form id="composer" class="card composer" autocomplete="off">
+        <div class="composer-head">
+          <label class="field-label" for="prompt">画面描述</label>
+          <span class="counter" id="counter">0 / 4000</span>
+        </div>
+        <textarea id="prompt" class="prompt" rows="6" maxlength="4000"
+          placeholder="写得越具体越好：主体、风格、光线、构图，以及画面内要出现的文字。&#10;例如：极简产品海报，一只白色陶瓷杯放在米色台面上，清晨侧光，留白构图，标题写着「Morning Ritual」"></textarea>
+        <div class="chips" id="prompt-chips" aria-label="提示词示例">
+          <button type="button" class="chip" data-prompt="极简产品海报，一只白色陶瓷杯放在米色台面上，清晨侧光，柔和阴影，留白构图，标题写着「Morning Ritual」，高级杂志质感">产品海报</button>
+          <button type="button" class="chip" data-prompt="扁平插画风格，一家小书店的木质招牌上写着「青山书店」，暖黄灯光，街角视角，简洁温暖的构图">插画</button>
+          <button type="button" class="chip" data-prompt="为一家名为「Aster」的独立咖啡品牌设计极简 Logo，几何图形，黑金配色，纯色背景，居中构图">Logo</button>
+          <button type="button" class="chip" data-prompt="一张播客封面：深蓝色背景，中央是发光的声波纹理，标题写着「深夜电台」，极简、现代、电影感">播客封面</button>
+        </div>
+
+        <div class="ref-section">
+          <div class="field-row">
+            <span class="field-label">参考图 <span class="muted">可选 · 最多 <span id="max-refs">4</span> 张</span></span>
+            <button type="button" class="link-btn" id="clear-refs" hidden>清空</button>
+          </div>
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="上传参考图">
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <span class="drop-copy"><strong>拖入图片</strong><span>或点击选择文件</span></span>
+            <small>PNG / JPG / WEBP · 单张 ≤ <span id="max-ref-mb">10</span> MB</small>
+            <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+          </div>
+          <div id="refs" class="refs" aria-live="polite"></div>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <span class="field-label">模型</span>
+            <div class="segmented" id="seg-model" role="radiogroup" aria-label="模型"></div>
+          </div>
+          <div class="control">
+            <span class="field-label">尺寸</span>
+            <div class="segmented" id="seg-size" role="radiogroup" aria-label="尺寸"></div>
+          </div>
+          <div class="control">
+            <span class="field-label">张数</span>
+            <div class="segmented" id="seg-n" role="radiogroup" aria-label="张数"></div>
+          </div>
+        </div>
+
+        <div class="fidelity-row" id="fidelity-row" hidden>
+          <div>
+            <span class="field-label">参考图高还原度</span>
+            <p class="hint">更贴近参考图的人物、构图与风格</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="fidelity" checked>
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" id="submit" class="btn btn-primary">
+            <span class="btn-label">开始生成</span>
+            <span class="btn-arrow" aria-hidden="true">↗</span>
+          </button>
+          <span class="submit-note" id="submit-note">通常 30–90 秒</span>
+        </div>
+      </form>
+
+      <aside class="card queue-panel" aria-label="进行中的任务">
+        <div class="panel-head">
+          <h2>进行中</h2>
+          <span class="queue-meta" id="queue-meta"></span>
+        </div>
+        <div id="active-list" class="active-list"></div>
+        <div id="active-empty" class="panel-empty">
+          <span class="empty-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
+          <p>暂无进行中的任务</p>
+          <span>提交后会在这里显示排队与生成状态</span>
+        </div>
+        <div class="panel-foot">
+          <span class="status-dot" id="health-dot"></span>
+          <span id="health-text">正在连接服务…</span>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section id="view-tasks" class="view" hidden>
+    <div class="section-head">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-line"></span>QUEUE</p>
+        <h1>任务</h1>
+        <p class="section-sub">最近的提交、排队与失败记录</p>
+      </div>
+      <button type="button" id="refresh-tasks" class="btn btn-secondary">刷新</button>
+    </div>
+    <div id="tasks-list" class="task-list"></div>
+    <p id="tasks-empty" class="empty">暂无任务。</p>
+  </section>
+
+  <section id="view-gallery" class="view" hidden>
+    <div class="section-head">
+      <div>
+        <p class="eyebrow"><span class="eyebrow-line"></span>GALLERY</p>
+        <h1>画廊</h1>
+        <p class="section-sub" id="gallery-sub">你的生成记录 · 每人最多保留最近 5 张</p>
+      </div>
+      <span class="count-pill" id="gallery-count"></span>
+    </div>
+    <div id="gallery" class="gallery"></div>
+    <p id="gallery-empty" class="empty">还没有作品。去创作第一张图。</p>
+    <div class="load-more-wrap"><button type="button" id="load-more" class="btn btn-secondary" hidden>加载更多</button></div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span>Sunburst</span>
+  <span class="footer-dot"></span>
+  <span>PNG 输出</span>
+  <span class="footer-dot"></span>
+  <span>画面文字偶发繁简体偏差，可在描述中强调“使用简体字”</span>
+</footer>
+
+<div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="查看大图">
+  <div class="lightbox-panel">
+    <div class="lightbox-bar">
+      <div class="lightbox-title">
+        <strong id="lightbox-title">作品</strong>
+        <span id="lightbox-sub"></span>
+      </div>
+      <div class="lightbox-actions">
+        <a id="lightbox-download" class="btn btn-secondary btn-small" href="#" download>下载</a>
+        <button type="button" id="lightbox-close" class="icon-btn" aria-label="关闭">
+          <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="lightbox-stage"><img id="lightbox-img" alt=""></div>
+    <div id="lightbox-meta" class="lightbox-meta"></div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite" aria-atomic="false"></div>
+
+<div id="login" class="login" hidden>
+  <div class="login-card">
+    <span class="brand-mark login-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6" fill="none" stroke="currentColor" stroke-width="1.6"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2.7v2.1M12 19.2v2.1M2.7 12h2.1M19.2 12h2.1M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M18.6 5.4l-1.5 1.5M6.9 17.1l-1.5 1.5"/></g></svg>
+    </span>
+    <p class="eyebrow">SUNBURST · SIGN IN</p>
+    <h1>欢迎回来</h1>
+    <p class="login-sub">请输入分配给你的账号和密码</p>
+    <form id="login-form" autocomplete="on">
+      <label class="login-field">
+        <span>用户名</span>
+        <input id="login-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label class="login-field">
+        <span>密码</span>
+        <input id="login-pass" type="password" autocomplete="current-password" required>
+      </label>
+      <p id="login-error" class="login-error" hidden></p>
+      <button type="submit" class="btn btn-primary login-submit">登录</button>
+    </form>
+    <p class="login-note">账号由站点管理员分配；每人最多保留最近 5 张图片。</p>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
